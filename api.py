@@ -9,8 +9,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 
-LLAMA_SERVER_URL = os.environ["LLAMA_SERVER_URL"]
-TIMEOUT_SECONDS = float(os.environ["LLAMA_SERVER_TIMEOUT"])
+try:
+    LLAMA_SERVER_URL = os.environ["LLAMA_SERVER_URL"]
+    TIMEOUT_SECONDS = float(os.environ["LLAMA_SERVER_TIMEOUT"])
+except KeyError as e:
+    raise RuntimeError(
+        f"Missing required environment variable: {e}. "
+        "Copy .env.template to .env and configure it before running."
+    ) from e
 
 logger = logging.getLogger("budget-ai")
 

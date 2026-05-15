@@ -15,14 +15,14 @@ DETACHED=false
 INSTALL_DEPS=false
 
 # Environment variables (no defaults - must be set in .env or externally)
-FASTAPI_HOST="${FASTAPI_HOST:?FASTAPI_HOST must be set}"
-FASTAPI_PORT="${FASTAPI_PORT:?FASTAPI_PORT must be set}"
-LLAMA_PORT="${LLAMA_PORT:?LLAMA_PORT must be set}"
+FASTAPI_HOST="${FASTAPI_HOST:?FASTAPI_HOST must be set. Copy .env.template to .env and configure it.}"
+FASTAPI_PORT="${FASTAPI_PORT:?FASTAPI_PORT must be set. Copy .env.template to .env and configure it.}"
+LLAMA_PORT="${LLAMA_PORT:?LLAMA_PORT must be set. Copy .env.template to .env and configure it.}"
 
-LLAMA_IMAGE="${LLAMA_IMAGE:?LLAMA_IMAGE must be set}"
-MODEL_DIR="${MODEL_DIR:?MODEL_DIR must be set}"
-MODEL_NAME="${MODEL_NAME:?MODEL_NAME must be set}"
-MODEL_URL="${MODEL_URL:?MODEL_URL must be set}"
+LLAMA_IMAGE="${LLAMA_IMAGE:?LLAMA_IMAGE must be set. Copy .env.template to .env and configure it.}"
+MODEL_DIR="${MODEL_DIR:?MODEL_DIR must be set. Copy .env.template to .env and configure it.}"
+MODEL_NAME="${MODEL_NAME:?MODEL_NAME must be set. Copy .env.template to .env and configure it.}"
+MODEL_URL="${MODEL_URL:?MODEL_URL must be set. Copy .env.template to .env and configure it.}"
 MODEL_PATH="$MODEL_DIR/$MODEL_NAME"
 
 usage() {
