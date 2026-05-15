@@ -11,7 +11,7 @@ FASTAPI_HOST="${FASTAPI_HOST:-0.0.0.0}"
 FASTAPI_PORT="${FASTAPI_PORT:-8000}"
 LLAMA_PORT="${LLAMA_PORT:-8080}"
 
-LLAMA_IMAGE="${LLAMA_IMAGE:-ghcr.io/ggerganov/llama.cpp:server}"
+LLAMA_IMAGE="${LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:server}"
 MODEL_DIR="${MODEL_DIR:-$SCRIPT_DIR/models}"
 MODEL_NAME="${MODEL_NAME:-tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf}"
 MODEL_URL="${MODEL_URL:-https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf}"
