@@ -67,5 +67,6 @@ def generate(req: GenerateRequest) -> StreamingResponse:
                     yield chunk
         except Exception as exc:
             logger.error("Unexpected error in stream_generator: %s", exc)
+            yield f"data: {json.dumps({'error': str(exc)})}\n\n".encode()
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")

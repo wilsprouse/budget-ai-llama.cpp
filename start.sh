@@ -121,7 +121,24 @@ start_fastapi() {
     nohup python3 -m uvicorn api:app --host "$FASTAPI_HOST" --port "$FASTAPI_PORT" > "$SCRIPT_DIR/fastapi.log" 2>&1 &
     echo $! > "$SCRIPT_DIR/fastapi.pid"
     echo "FastAPI PID: $(cat "$SCRIPT_DIR/fastapi.pid")"
-    echo "Try: curl -X POST http://127.0.0.1:${FASTAPI_PORT}/generate -H 'Content-Type: application/json' -d '{\"prompt\":\"hello\"}'"
+
+    echo "Waiting for FastAPI to become healthy..."
+    fastapi_ready=false
+    for _ in {1..30}; do
+      if curl -fsS "http://127.0.0.1:${FASTAPI_PORT}/health" >/dev/null 2>&1; then
+        echo "FastAPI is ready"
+        fastapi_ready=true
+        break
+      fi
+      sleep 1
+    done
+
+    if [[ "$fastapi_ready" != true ]]; then
+      echo "FastAPI did not become ready in time. Check $SCRIPT_DIR/fastapi.log for details."
+      exit 1
+    fi
+
+    echo "Try: curl -N -X POST http://127.0.0.1:${FASTAPI_PORT}/generate -H 'Content-Type: application/json' -d '{\"prompt\":\"hello\"}'"
   else
     echo "Starting FastAPI on port $FASTAPI_PORT"
     exec python3 -m uvicorn api:app --host "$FASTAPI_HOST" --port "$FASTAPI_PORT"
