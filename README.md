@@ -64,4 +64,4 @@ Default environment variables (as defined in `.env.template`):
 - `LLAMA_IMAGE` = `ghcr.io/ggml-org/llama.cpp:server`
 - `MODEL_DIR` = `./models`
 - `MODEL_NAME` = `qwen2.5-coder-7b-instruct-q4_k_m.gguf`
-- `MODEL_URL` = Qwen2.5-Coder 7B GGUF from Hugging Face
+- `MODEL_URL` = `https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF/resolve/main/qwen2.5-coder-7b-instruct-q4_k_m.gguf`
