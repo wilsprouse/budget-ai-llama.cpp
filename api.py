@@ -9,8 +9,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 
-LLAMA_SERVER_URL = os.getenv("LLAMA_SERVER_URL", "http://127.0.0.1:8080")
-TIMEOUT_SECONDS = float(os.getenv("LLAMA_SERVER_TIMEOUT", "120"))
+LLAMA_SERVER_URL = os.environ["LLAMA_SERVER_URL"]
+TIMEOUT_SECONDS = float(os.environ["LLAMA_SERVER_TIMEOUT"])
 
 logger = logging.getLogger("budget-ai")
 

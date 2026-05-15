@@ -3,3 +3,4 @@ __pycache__/
 models/
 fastapi.log
 fastapi.pid
+.env
