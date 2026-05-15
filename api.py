@@ -10,8 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 
-LLAMA_SERVER_URL = os.getenv("LLAMA_SERVER_URL", "http://127.0.0.1:8080")
-TIMEOUT_SECONDS = float(os.getenv("LLAMA_SERVER_TIMEOUT", "120"))
+try:
+    LLAMA_SERVER_URL = os.environ["LLAMA_SERVER_URL"]
+    TIMEOUT_SECONDS = float(os.environ["LLAMA_SERVER_TIMEOUT"])
+except KeyError as e:
+    raise RuntimeError(
+        f"Missing required environment variable: {e}. "
+        "Copy .env.template to .env and configure it before running."
+    ) from e
 
 logger = logging.getLogger("budget-ai")
 

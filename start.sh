@@ -4,17 +4,25 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Load environment variables from .env file if it exists
+if [[ -f "$SCRIPT_DIR/.env" ]]; then
+  set -a
+  source "$SCRIPT_DIR/.env"
+  set +a
+fi
+
 DETACHED=false
 INSTALL_DEPS=false
 
-FASTAPI_HOST="${FASTAPI_HOST:-0.0.0.0}"
-FASTAPI_PORT="${FASTAPI_PORT:-8000}"
-LLAMA_PORT="${LLAMA_PORT:-8080}"
+# Environment variables (no defaults - must be set in .env or externally)
+FASTAPI_HOST="${FASTAPI_HOST:?FASTAPI_HOST must be set. Copy .env.template to .env and configure it.}"
+FASTAPI_PORT="${FASTAPI_PORT:?FASTAPI_PORT must be set. Copy .env.template to .env and configure it.}"
+LLAMA_PORT="${LLAMA_PORT:?LLAMA_PORT must be set. Copy .env.template to .env and configure it.}"
 
-LLAMA_IMAGE="${LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:server}"
-MODEL_DIR="${MODEL_DIR:-$SCRIPT_DIR/models}"
-MODEL_NAME="${MODEL_NAME:-tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf}"
-MODEL_URL="${MODEL_URL:-https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf}"
+LLAMA_IMAGE="${LLAMA_IMAGE:?LLAMA_IMAGE must be set. Copy .env.template to .env and configure it.}"
+MODEL_DIR="${MODEL_DIR:?MODEL_DIR must be set. Copy .env.template to .env and configure it.}"
+MODEL_NAME="${MODEL_NAME:?MODEL_NAME must be set. Copy .env.template to .env and configure it.}"
+MODEL_URL="${MODEL_URL:?MODEL_URL must be set. Copy .env.template to .env and configure it.}"
 MODEL_PATH="$MODEL_DIR/$MODEL_NAME"
 
 usage() {
@@ -82,7 +90,7 @@ start_llama_server() {
   mkdir -p "$MODEL_DIR"
 
   if [[ ! -f "$MODEL_PATH" ]]; then
-    echo "Downloading TinyLlama model to $MODEL_PATH"
+    echo "Downloading model to $MODEL_PATH"
     curl -L --fail --output "$MODEL_PATH" "$MODEL_URL"
   fi
 
