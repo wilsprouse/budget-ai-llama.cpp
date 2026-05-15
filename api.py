@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -10,6 +11,8 @@ from pydantic import BaseModel, Field
 
 LLAMA_SERVER_URL = os.getenv("LLAMA_SERVER_URL", "http://127.0.0.1:8080")
 TIMEOUT_SECONDS = float(os.getenv("LLAMA_SERVER_TIMEOUT", "120"))
+
+logger = logging.getLogger("budget-ai")
 
 app = FastAPI(title="budget-ai-llama.cpp", version="0.1.0")
 
@@ -42,17 +45,27 @@ def generate(req: GenerateRequest) -> StreamingResponse:
         method="POST",
     )
 
+    # Verify the upstream server is reachable before starting the stream so
+    # that connection errors can be surfaced as a proper 502 response.
     try:
         response = urlopen(request, timeout=TIMEOUT_SECONDS)
     except URLError as exc:
         raise HTTPException(status_code=502, detail=f"Failed to reach llama.cpp server: {exc}") from exc
 
     def stream_generator():
-        with response:
-            while True:
-                chunk = response.readline()
-                if not chunk:
-                    break
-                yield chunk
+        try:
+            with response:
+                while True:
+                    try:
+                        chunk = response.readline()
+                    except OSError as exc:
+                        logger.error("Error reading from llama.cpp stream: %s", exc)
+                        yield f"data: {json.dumps({'error': str(exc)})}\n\n".encode()
+                        break
+                    if not chunk:
+                        break
+                    yield chunk
+        except Exception as exc:
+            logger.error("Unexpected error in stream_generator: %s", exc)
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
