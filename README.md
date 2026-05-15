@@ -33,13 +33,15 @@ Health check:
 curl http://127.0.0.1:8000/health
 ```
 
-Generate text:
+Generate text (response streams as SSE):
 
 ```bash
-curl -X POST http://127.0.0.1:8000/generate \
+curl -N -X POST http://127.0.0.1:8000/generate \
   -H 'Content-Type: application/json' \
   -d '{"prompt":"Write one sentence about tiny models.","max_tokens":64,"temperature":0.7}'
 ```
+
+Each token arrives as an SSE line, e.g. `data: {"content":"Hello"}`.
 
 ## Configuration
 

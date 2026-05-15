@@ -1,10 +1,10 @@
 import json
 import os
-from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 
@@ -26,11 +26,12 @@ def health() -> dict[str, str]:
 
 
 @app.post("/generate")
-def generate(req: GenerateRequest) -> dict[str, Any]:
+def generate(req: GenerateRequest) -> StreamingResponse:
     payload = {
         "prompt": req.prompt,
         "n_predict": req.max_tokens,
         "temperature": req.temperature,
+        "stream": True,
     }
 
     body = json.dumps(payload).encode("utf-8")
@@ -42,10 +43,16 @@ def generate(req: GenerateRequest) -> dict[str, Any]:
     )
 
     try:
-        with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-            response_payload = json.loads(response.read().decode("utf-8"))
+        response = urlopen(request, timeout=TIMEOUT_SECONDS)
     except URLError as exc:
         raise HTTPException(status_code=502, detail=f"Failed to reach llama.cpp server: {exc}") from exc
 
-    text = response_payload.get("content", "")
-    return {"text": text, "raw": response_payload}
+    def stream_generator():
+        with response:
+            while True:
+                chunk = response.readline()
+                if not chunk:
+                    break
+                yield chunk
+
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")
