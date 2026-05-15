@@ -104,9 +104,10 @@ start_llama_server() {
     -m "/models/$MODEL_NAME" \
     --host 0.0.0.0 \
     --port 8080 \
-    -c 512 \
-    -t 1 \
-    -ngl 0
+    -c 4096 \
+    -t $(nproc) \
+    -ngl 0 \
+    --parallel 2
 
   echo "Waiting for llama.cpp server to become healthy..."
   for _ in {1..30}; do
