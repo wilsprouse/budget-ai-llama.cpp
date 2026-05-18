@@ -98,6 +98,7 @@ start_llama_server() {
   podman rm -f budget-ai-llama-server >/dev/null 2>&1 || true
   podman run -d \
     --name budget-ai-llama-server \
+    --device nvidia.com/gpu=all \
     -p "$LLAMA_PORT:8080" \
     -v "$MODEL_DIR:/models:Z" \
     "$LLAMA_IMAGE" \
@@ -106,7 +107,7 @@ start_llama_server() {
     --port 8080 \
     -c 4096 \
     -t $(nproc) \
-    -ngl 0 \
+    -ngl 999 \
     --parallel 2
 
   echo "Waiting for llama.cpp server to become healthy..."
