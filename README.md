@@ -65,3 +65,11 @@ Default environment variables (as defined in `.env.template`):
 - `MODEL_DIR` = `./models`
 - `MODEL_NAME` = `qwen2.5-coder-32b-instruct-q4_k_m.gguf`
 - `MODEL_URL` = `https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct-GGUF/resolve/main/qwen2.5-coder-32b-instruct-q4_k_m`
+
+**Note:** The default 32B model is split into multiple files on Hugging Face. The `start.sh` script automatically:
+- Detects if `MODEL_URL` points to a split model (URL not ending in `.gguf`)
+- Downloads all split parts
+- Merges them using `llama-gguf-split`
+- Cleans up the split files
+
+For single-file models (like the 7B), ensure `MODEL_URL` ends with `.gguf`.
