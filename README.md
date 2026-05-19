@@ -21,7 +21,7 @@ Start services in detached mode:
 
 ## What `start.sh` does
 
-- Starts a `llama.cpp` server with **Qwen2.5-Coder 7B** by default using **Podman**.
+- Starts a `llama.cpp` server with **Qwen2.5-Coder 32B** by default using **Podman**.
 - Uses low-resource defaults for minimal hardware (`Q4_K_M`, `ctx=512`, `threads=1`, `ngl=0`).
 - Starts a FastAPI wrapper that forwards prompts to llama.cpp.
 
@@ -63,5 +63,5 @@ Default environment variables (as defined in `.env.template`):
 - `LLAMA_SERVER_TIMEOUT` = `120`
 - `LLAMA_IMAGE` = `ghcr.io/ggml-org/llama.cpp:server`
 - `MODEL_DIR` = `./models`
-- `MODEL_NAME` = `qwen2.5-coder-7b-instruct-q4_k_m.gguf`
-- `MODEL_URL` = `https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF/resolve/main/qwen2.5-coder-7b-instruct-q4_k_m.gguf`
+- `MODEL_NAME` = `qwen2.5-coder-32b-instruct-q4_k_m.gguf`
+- `MODEL_URL` = `https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct-GGUF/resolve/main/qwen2.5-coder-32b-instruct-q4_k_m`
