@@ -21,7 +21,7 @@ Start services in detached mode:
 
 ## What `start.sh` does
 
-- Starts a `llama.cpp` server with **Qwen2.5-Coder 32B** by default using **Podman**.
+- Starts a `llama.cpp` server with **Qwen2.5-Coder 14B** by default using **Podman**.
 - Uses low-resource defaults for minimal hardware (`Q4_K_M`, `ctx=512`, `threads=1`, `ngl=0`).
 - Starts a FastAPI wrapper that forwards prompts to llama.cpp.
 
@@ -63,13 +63,11 @@ Default environment variables (as defined in `.env.template`):
 - `LLAMA_SERVER_TIMEOUT` = `120`
 - `LLAMA_IMAGE` = `ghcr.io/ggml-org/llama.cpp:server`
 - `MODEL_DIR` = `./models`
-- `MODEL_NAME` = `qwen2.5-coder-32b-instruct-q4_k_m.gguf`
-- `MODEL_URL` = `https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct-GGUF/resolve/main/qwen2.5-coder-32b-instruct-q4_k_m`
+- `MODEL_NAME` = `qwen2.5-coder-14b-instruct-q4_k_m.gguf`
+- `MODEL_URL` = `https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF/resolve/main/qwen2.5-coder-14b-instruct-q4_k_m.gguf`
 
-**Note:** The default 32B model is split into multiple files on Hugging Face. The `start.sh` script automatically:
-- Detects if `MODEL_URL` points to a split model (URL not ending in `.gguf`)
-- Downloads all split parts
-- Merges them using `llama-gguf-split`
-- Cleans up the split files
+**Note:** The `start.sh` script supports both single-file and split models:
+- **Single-file models** (like the default 14B): URL ends with `.gguf` and downloads directly
+- **Split models** (like the 32B): URL without `.gguf` extension triggers automatic download of all parts, merging with `llama-gguf-split`, and cleanup
 
-For single-file models (like the 7B), ensure `MODEL_URL` ends with `.gguf`.
+To use a different model, update `MODEL_NAME` and `MODEL_URL` in your `.env` file.
