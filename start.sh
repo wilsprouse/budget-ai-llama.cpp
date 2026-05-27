@@ -98,20 +98,25 @@ start_llama_server() {
   podman rm -f budget-ai-llama-server >/dev/null 2>&1 || true
   podman run -d \
     --name budget-ai-llama-server \
+    --security-opt=label=disable \
     --device nvidia.com/gpu=all \
+    --ipc=host \
     -p "$LLAMA_PORT:8080" \
     -v "$MODEL_DIR:/models:Z" \
+    -e CUDA_VISIBLE_DEVICES=0 \
     "$LLAMA_IMAGE" \
     -m "/models/$MODEL_NAME" \
     --host 0.0.0.0 \
     --port 8080 \
-    -c 4096 \
-    -t $(nproc) \
+    -c 8192 \
+    -t 4 \
     -ngl 999 \
-    --parallel 2
+    --parallel 1 \
+    --batch-size 512 \
+    --ubatch-size 512
 
   echo "Waiting for llama.cpp server to become healthy..."
-  for _ in {1..30}; do
+  for _ in {1..60}; do
     if curl -fsS "http://127.0.0.1:${LLAMA_PORT}/health" >/dev/null 2>&1; then
       echo "llama.cpp server is ready"
       return
