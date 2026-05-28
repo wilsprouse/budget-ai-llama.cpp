@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 models/
+hf_cache/
 fastapi.log
 fastapi.pid
 .env

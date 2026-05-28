@@ -11,8 +11,8 @@ from pydantic import BaseModel, Field
 
 
 try:
-    LLAMA_SERVER_URL = os.environ["LLAMA_SERVER_URL"]
-    TIMEOUT_SECONDS = float(os.environ["LLAMA_SERVER_TIMEOUT"])
+    VLLM_SERVER_URL = os.environ["VLLM_SERVER_URL"]
+    TIMEOUT_SECONDS = float(os.environ["VLLM_SERVER_TIMEOUT"])
 except KeyError as e:
     raise RuntimeError(
         f"Missing required environment variable: {e}. "
@@ -21,7 +21,7 @@ except KeyError as e:
 
 logger = logging.getLogger("budget-ai")
 
-app = FastAPI(title="budget-ai-llama.cpp", version="0.1.0")
+app = FastAPI(title="budget-ai-vllm", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,16 +44,18 @@ def health() -> dict[str, str]:
 
 @app.post("/generate")
 def generate(req: GenerateRequest) -> StreamingResponse:
+    # vLLM uses OpenAI-compatible API format
     payload = {
+        "model": "default",  # vLLM uses the loaded model
         "prompt": req.prompt,
-        "n_predict": req.max_tokens,
+        "max_tokens": req.max_tokens,
         "temperature": req.temperature,
         "stream": True,
     }
 
     body = json.dumps(payload).encode("utf-8")
     request = Request(
-        f"{LLAMA_SERVER_URL.rstrip('/')}/completion",
+        f"{VLLM_SERVER_URL.rstrip('/')}/v1/completions",
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -64,7 +66,7 @@ def generate(req: GenerateRequest) -> StreamingResponse:
     try:
         response = urlopen(request, timeout=TIMEOUT_SECONDS)
     except URLError as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to reach llama.cpp server: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"Failed to reach vLLM server: {exc}") from exc
 
     def stream_generator():
         try:
@@ -73,12 +75,28 @@ def generate(req: GenerateRequest) -> StreamingResponse:
                     try:
                         chunk = response.readline()
                     except OSError as exc:
-                        logger.error("Error reading from llama.cpp stream: %s", exc)
+                        logger.error("Error reading from vLLM stream: %s", exc)
                         yield f"data: {json.dumps({'error': str(exc)})}\n\n".encode()
                         break
                     if not chunk:
                         break
-                    yield chunk
+                    # vLLM returns SSE format: "data: {...}\n\n"
+                    # Parse and reformat to match our API format
+                    line = chunk.decode('utf-8').strip()
+                    if line.startswith("data: "):
+                        data_str = line[6:]  # Remove "data: " prefix
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            # Extract the text from vLLM's format
+                            if "choices" in data and len(data["choices"]) > 0:
+                                text = data["choices"][0].get("text", "")
+                                # Reformat to our API format
+                                yield f"data: {json.dumps({'content': text})}\n\n".encode()
+                        except json.JSONDecodeError:
+                            # If we can't parse, just pass through
+                            yield chunk
         except Exception as exc:
             logger.error("Unexpected error in stream_generator: %s", exc)
 
