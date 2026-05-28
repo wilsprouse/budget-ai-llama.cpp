@@ -90,8 +90,57 @@ start_llama_server() {
   mkdir -p "$MODEL_DIR"
 
   if [[ ! -f "$MODEL_PATH" ]]; then
-    echo "Downloading model to $MODEL_PATH"
-    curl -L --fail --output "$MODEL_PATH" "$MODEL_URL"
+    echo "Model file not found at $MODEL_PATH"
+    
+    # Check if this is a split model by looking for split parts in the URL
+    # For split models, the URL should not end with .gguf
+    if [[ "$MODEL_URL" =~ \.gguf$ ]]; then
+      # Single file model - download directly
+      echo "Downloading single model file to $MODEL_PATH"
+      curl -L --fail --output "$MODEL_PATH" "$MODEL_URL"
+    else
+      # Split model - download and merge parts
+      echo "Downloading split model parts to $MODEL_DIR"
+      
+      # The 32B model is split into 3 parts: 00001-of-00003, 00002-of-00003, 00003-of-00003
+      for part in 00001-of-00003 00002-of-00003 00003-of-00003; do
+        part_filename="${MODEL_NAME%.gguf}-${part}.gguf"
+        part_path="$MODEL_DIR/$part_filename"
+        part_url="${MODEL_URL}-${part}.gguf"
+        
+        if [[ ! -f "$part_path" ]]; then
+          echo "Downloading $part_filename from $part_url"
+          if ! curl -L --fail --output "$part_path" "$part_url"; then
+            echo "ERROR: Failed to download $part_filename"
+            exit 1
+          fi
+        else
+          echo "Part $part_filename already exists, skipping download"
+        fi
+      done
+      
+      # Merge the parts using llama-gguf-split (available in the llama.cpp container)
+      echo "Merging model parts into $MODEL_PATH"
+      first_part="${MODEL_NAME%.gguf}-00001-of-00003.gguf"
+      if ! podman run --rm \
+        -v "$MODEL_DIR:/models:Z" \
+        "$LLAMA_IMAGE" \
+        llama-gguf-split --merge "/models/$first_part" "/models/$MODEL_NAME"; then
+        echo "ERROR: Failed to merge model parts. Check that llama-gguf-split is available in the container."
+        exit 1
+      fi
+      
+      # Clean up the split files after successful merge
+      if [[ -f "$MODEL_PATH" ]]; then
+        echo "Merge successful, cleaning up split files"
+        rm -f "$MODEL_DIR/${MODEL_NAME%.gguf}"-*-of-*.gguf
+      else
+        echo "ERROR: Merge failed, $MODEL_PATH not created"
+        exit 1
+      fi
+    fi
+  else
+    echo "Model file already exists at $MODEL_PATH"
   fi
 
   echo "Starting llama.cpp server container on port $LLAMA_PORT"
