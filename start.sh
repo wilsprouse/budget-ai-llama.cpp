@@ -106,6 +106,8 @@ start_vllm_server() {
     --gpu-memory-utilization 0.9
 
   echo "Waiting for vLLM server to become healthy..."
+  # vLLM may take longer than llama.cpp to become ready, especially on first run
+  # when it needs to download the model from Hugging Face
   for _ in {1..120}; do
     if curl -fsS "http://127.0.0.1:${VLLM_PORT}/health" >/dev/null 2>&1; then
       echo "vLLM server is ready"

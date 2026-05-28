@@ -82,7 +82,12 @@ def generate(req: GenerateRequest) -> StreamingResponse:
                         break
                     # vLLM returns SSE format: "data: {...}\n\n"
                     # Parse and reformat to match our API format
-                    line = chunk.decode('utf-8').strip()
+                    try:
+                        line = chunk.decode('utf-8').strip()
+                    except UnicodeDecodeError as exc:
+                        logger.error("Error decoding vLLM response: %s", exc)
+                        yield f"data: {json.dumps({'error': 'Invalid UTF-8 in response'})}\n\n".encode()
+                        break
                     if line.startswith("data: "):
                         data_str = line[6:]  # Remove "data: " prefix
                         if data_str == "[DONE]":
