@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 try:
     VLLM_SERVER_URL = os.environ["VLLM_SERVER_URL"]
     TIMEOUT_SECONDS = float(os.environ["VLLM_SERVER_TIMEOUT"])
+    MODEL_NAME = os.environ["MODEL_NAME"]
 except KeyError as e:
     raise RuntimeError(
         f"Missing required environment variable: {e}. "
@@ -46,8 +47,13 @@ def health() -> dict[str, str]:
 def generate(req: GenerateRequest) -> StreamingResponse:
     # vLLM uses OpenAI-compatible API format
     payload = {
-        "model": "default",  # vLLM uses the loaded model
-        "prompt": req.prompt,
+        "model": MODEL_NAME,
+        "messages": [
+            {
+                "role": "user",
+                "content": req.prompt,
+            }
+        ],
         "max_tokens": req.max_tokens,
         "temperature": req.temperature,
         "stream": True,
