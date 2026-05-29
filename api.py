@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from urllib.error import URLError, HTPPError
+from urllib.error import URLError, HTTPError
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
