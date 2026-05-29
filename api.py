@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from typing import List, Optional, Literal
 
 
 try:
@@ -31,6 +32,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class Message(BaseModel):
+    role: Literal["system", "user", "assistant"]
+    content: str
 
 class GenerateRequest(BaseModel):
     model: Optional[str] = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
