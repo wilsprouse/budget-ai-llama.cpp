@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from urllib.error import URLError
+from urllib.error import URLError, HTPPError
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
@@ -90,36 +90,10 @@ def generate(req: GenerateRequest) -> StreamingResponse:
         try:
             with response:
                 while True:
-                    try:
-                        chunk = response.readline()
-                    except OSError as exc:
-                        logger.error("Error reading from vLLM stream: %s", exc)
-                        yield f"data: {json.dumps({'error': str(exc)})}\n\n".encode()
-                        break
+                    chunk = response.readline()
                     if not chunk:
                         break
-                    # vLLM returns SSE format: "data: {...}\n\n"
-                    # Parse and reformat to match our API format
-                    try:
-                        line = chunk.decode('utf-8').strip()
-                    except UnicodeDecodeError as exc:
-                        logger.error("Error decoding vLLM response: %s", exc)
-                        yield f"data: {json.dumps({'error': 'Invalid UTF-8 in response'})}\n\n".encode()
-                        break
-                    if line.startswith("data: "):
-                        data_str = line[6:]  # Remove "data: " prefix
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            data = json.loads(data_str)
-                            # Extract the text from vLLM's format
-                            if "choices" in data and len(data["choices"]) > 0:
-                                text = data["choices"][0].get("text", "")
-                                # Reformat to our API format
-                                yield f"data: {json.dumps({'content': text})}\n\n".encode()
-                        except json.JSONDecodeError:
-                            # If we can't parse, just pass through
-                            yield chunk
+                    yield chunk  # <-- raw vLLM SSE passthrough
         except Exception as exc:
             logger.error("Unexpected error in stream_generator: %s", exc)
 
