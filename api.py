@@ -55,7 +55,7 @@ def generate(req: GenerateRequest) -> StreamingResponse:
 
     body = json.dumps(payload).encode("utf-8")
     request = Request(
-        f"{VLLM_SERVER_URL.rstrip('/')}/v1/completions",
+        f"{VLLM_SERVER_URL.rstrip('/')}/v1/chat/completions",
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
