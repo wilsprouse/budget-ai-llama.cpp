@@ -65,8 +65,17 @@ def generate(req: GenerateRequest) -> StreamingResponse:
     # that connection errors can be surfaced as a proper 502 response.
     try:
         response = urlopen(request, timeout=TIMEOUT_SECONDS)
-    except URLError as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to reach vLLM server: {exc}") from exc
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "status": exc.code,
+                "reason": exc.reason,
+                "body": body,
+            },
+        )
 
     def stream_generator():
         try:
