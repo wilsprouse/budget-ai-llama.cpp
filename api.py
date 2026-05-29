@@ -33,9 +33,11 @@ app.add_middleware(
 )
 
 class GenerateRequest(BaseModel):
-    prompt: str = Field(..., min_length=1)
-    max_tokens: int = Field(default=128, ge=1, le=4096)
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    model: Optional[str] = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+    messages: List[Message]
+    max_tokens: Optional[int] = 128
+    temperature: Optional[float] = 0.7
+    stream: Optional[bool] = True
 
 
 @app.get("/health")
@@ -47,19 +49,15 @@ def health() -> dict[str, str]:
 def generate(req: GenerateRequest) -> StreamingResponse:
     # vLLM uses OpenAI-compatible API format
     payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {
-                "role": "user",
-                "content": req.prompt,
-            }
-        ],
+        "model": req.model,
+        "messages": [msg.model_dump() for msg in req.messages],
         "max_tokens": req.max_tokens,
         "temperature": req.temperature,
-        "stream": True,
+        "stream": req.stream,
     }
 
     body = json.dumps(payload).encode("utf-8")
+
     request = Request(
         f"{VLLM_SERVER_URL.rstrip('/')}/v1/chat/completions",
         data=body,
