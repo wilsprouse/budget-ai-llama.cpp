@@ -21,7 +21,7 @@ Start services in detached mode:
 
 ## What `start.sh` does
 
-- Starts a `vLLM` server with **Qwen2.5-Coder 7B Instruct** by default using **Podman**.
+- Starts a `vLLM` server with **Mistral 7B Instruct v0.3 (AWQ)** by default using **Podman**.
 - vLLM provides high throughput and efficient GPU utilization with PagedAttention.
 - Supports high concurrency across multiple users.
 - Starts a FastAPI wrapper that forwards prompts to vLLM's OpenAI-compatible API.
@@ -63,5 +63,5 @@ Default environment variables (as defined in `.env.template`):
 - `VLLM_SERVER_URL` = `http://127.0.0.1:8080`
 - `VLLM_SERVER_TIMEOUT` = `120`
 - `VLLM_IMAGE` = `vllm/vllm-openai:latest`
-- `MODEL_NAME` = `Qwen/Qwen2.5-Coder-7B-Instruct` (Hugging Face model ID)
+- `MODEL_NAME` = `TheBloke/Mistral-7B-Instruct-v0.3-AWQ` (Hugging Face model ID)
 - `HF_HOME` = `./hf_cache` (cache directory for downloaded models)
