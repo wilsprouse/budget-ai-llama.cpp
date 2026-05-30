@@ -38,7 +38,7 @@ class Message(BaseModel):
     content: str
 
 class GenerateRequest(BaseModel):
-    model: Optional[str] = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+    model: Optional[str] = MODEL_NAME
     messages: List[Message]
     max_tokens: Optional[int] = 128
     temperature: Optional[float] = 0.7

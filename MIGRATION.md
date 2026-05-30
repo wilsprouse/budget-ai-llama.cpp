@@ -18,7 +18,7 @@ vLLM provides:
 
 ### 2. Model Format
 - **Before**: GGUF quantized models (e.g., `qwen2.5-coder-7b-instruct-q4_k_m.gguf`)
-- **After**: Hugging Face model IDs (e.g., `Qwen/Qwen2.5-Coder-7B-Instruct`)
+- **After**: Hugging Face model IDs (e.g., `TheBloke/Mistral-7B-Instruct-v0.3-AWQ`)
 
 ### 3. Model Storage
 - **Before**: Models downloaded manually via curl to `./models/` directory

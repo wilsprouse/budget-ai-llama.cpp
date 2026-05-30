@@ -89,21 +89,26 @@ start_vllm_server() {
 
   echo "Starting vLLM server container on port $VLLM_PORT"
   podman rm -f budget-ai-vllm-server >/dev/null 2>&1 || true
-  podman run -d \
-    --name budget-ai-vllm-server \
-    --security-opt=label=disable \
-    --device nvidia.com/gpu=all \
-    --ipc=host \
-    -p "$VLLM_PORT:8000" \
-    -v "$HF_HOME:/root/.cache/huggingface:Z" \
-    -e CUDA_VISIBLE_DEVICES=0 \
-    -e HF_HOME=/root/.cache/huggingface \
-    "$VLLM_IMAGE" \
+podman run -d \
+  --name budget-ai-vllm-server \
+  --restart unless-stopped \
+  --security-opt=label=disable \
+  --device nvidia.com/gpu=all \
+  --shm-size=8g \
+  -p "$VLLM_PORT:8000" \
+  -v "$HF_HOME:/root/.cache/huggingface:Z" \
+  -e CUDA_VISIBLE_DEVICES=0 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e CUDA_MODULE_LOADING=LAZY \
+  -e VLLM_USE_V1=1 \
+  "$VLLM_IMAGE" \
     --model "$MODEL_NAME" \
     --host 0.0.0.0 \
     --port 8000 \
+    --dtype bfloat16 \
     --max-model-len 8192 \
-    --gpu-memory-utilization 0.9
+    --max-num-seqs 4 \
+    --gpu-memory-utilization 0.92
 
   echo "Waiting for vLLM server to become healthy..."
   # vLLM may take longer than llama.cpp to become ready, especially on first run
