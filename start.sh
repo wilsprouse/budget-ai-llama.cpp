@@ -17,13 +17,11 @@ INSTALL_DEPS=false
 # Environment variables (no defaults - must be set in .env or externally)
 FASTAPI_HOST="${FASTAPI_HOST:?FASTAPI_HOST must be set. Copy .env.template to .env and configure it.}"
 FASTAPI_PORT="${FASTAPI_PORT:?FASTAPI_PORT must be set. Copy .env.template to .env and configure it.}"
-LLAMA_PORT="${LLAMA_PORT:?LLAMA_PORT must be set. Copy .env.template to .env and configure it.}"
+VLLM_PORT="${VLLM_PORT:?VLLM_PORT must be set. Copy .env.template to .env and configure it.}"
 
-LLAMA_IMAGE="${LLAMA_IMAGE:?LLAMA_IMAGE must be set. Copy .env.template to .env and configure it.}"
-MODEL_DIR="${MODEL_DIR:?MODEL_DIR must be set. Copy .env.template to .env and configure it.}"
+VLLM_IMAGE="${VLLM_IMAGE:?VLLM_IMAGE must be set. Copy .env.template to .env and configure it.}"
 MODEL_NAME="${MODEL_NAME:?MODEL_NAME must be set. Copy .env.template to .env and configure it.}"
-MODEL_URL="${MODEL_URL:?MODEL_URL must be set. Copy .env.template to .env and configure it.}"
-MODEL_PATH="$MODEL_DIR/$MODEL_NAME"
+HF_HOME="${HF_HOME:-./hf_cache}"
 
 usage() {
   cat <<'USAGE'
@@ -75,7 +73,7 @@ install_deps() {
   python3 -m pip install --user -r "$SCRIPT_DIR/requirements.txt" || \
     python3 -m pip install --break-system-packages -r "$SCRIPT_DIR/requirements.txt"
 
-  podman pull "$LLAMA_IMAGE"
+  podman pull "$VLLM_IMAGE"
 }
 
 require_cmd() {
@@ -86,50 +84,44 @@ require_cmd() {
   fi
 }
 
-start_llama_server() {
-  mkdir -p "$MODEL_DIR"
+start_vllm_server() {
+  mkdir -p "$HF_HOME"
 
-  if [[ ! -f "$MODEL_PATH" ]]; then
-    echo "Downloading model to $MODEL_PATH"
-    curl -L --fail --output "$MODEL_PATH" "$MODEL_URL"
-  fi
-
-  echo "Starting llama.cpp server container on port $LLAMA_PORT"
-  podman rm -f budget-ai-llama-server >/dev/null 2>&1 || true
+  echo "Starting vLLM server container on port $VLLM_PORT"
+  podman rm -f budget-ai-vllm-server >/dev/null 2>&1 || true
   podman run -d \
-    --name budget-ai-llama-server \
+    --name budget-ai-vllm-server \
     --security-opt=label=disable \
     --device nvidia.com/gpu=all \
     --ipc=host \
-    -p "$LLAMA_PORT:8080" \
-    -v "$MODEL_DIR:/models:Z" \
+    -p "$VLLM_PORT:8000" \
+    -v "$HF_HOME:/root/.cache/huggingface:Z" \
     -e CUDA_VISIBLE_DEVICES=0 \
-    "$LLAMA_IMAGE" \
-    -m "/models/$MODEL_NAME" \
+    -e HF_HOME=/root/.cache/huggingface \
+    "$VLLM_IMAGE" \
+    --model "$MODEL_NAME" \
     --host 0.0.0.0 \
-    --port 8080 \
-    -c 8192 \
-    -t 4 \
-    -ngl 999 \
-    --parallel 1 \
-    --batch-size 512 \
-    --ubatch-size 512
+    --port 8000 \
+    --max-model-len 8192 \
+    --gpu-memory-utilization 0.9
 
-  echo "Waiting for llama.cpp server to become healthy..."
-  for _ in {1..60}; do
-    if curl -fsS "http://127.0.0.1:${LLAMA_PORT}/health" >/dev/null 2>&1; then
-      echo "llama.cpp server is ready"
+  echo "Waiting for vLLM server to become healthy..."
+  # vLLM may take longer than llama.cpp to become ready, especially on first run
+  # when it needs to download the model from Hugging Face
+  for _ in {1..120}; do
+    if curl -fsS "http://127.0.0.1:${VLLM_PORT}/health" >/dev/null 2>&1; then
+      echo "vLLM server is ready"
       return
     fi
-    sleep 1
+    sleep 2
   done
 
-  echo "llama.cpp server did not become ready in time"
+  echo "vLLM server did not become ready in time"
   exit 1
 }
 
 start_fastapi() {
-  export LLAMA_SERVER_URL="http://127.0.0.1:${LLAMA_PORT}"
+  export VLLM_SERVER_URL="http://127.0.0.1:${VLLM_PORT}"
 
   if [[ "$DETACHED" == true ]]; then
     echo "Starting FastAPI in detached mode on port $FASTAPI_PORT"
@@ -151,5 +143,5 @@ require_cmd python3
 require_cmd podman
 require_cmd curl
 
-start_llama_server
+start_vllm_server
 start_fastapi

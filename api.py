@@ -1,18 +1,20 @@
 import json
 import logging
 import os
-from urllib.error import URLError
+from urllib.error import URLError, HTTPError
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from typing import List, Optional, Literal
 
 
 try:
-    LLAMA_SERVER_URL = os.environ["LLAMA_SERVER_URL"]
-    TIMEOUT_SECONDS = float(os.environ["LLAMA_SERVER_TIMEOUT"])
+    VLLM_SERVER_URL = os.environ["VLLM_SERVER_URL"]
+    TIMEOUT_SECONDS = float(os.environ["VLLM_SERVER_TIMEOUT"])
+    MODEL_NAME = os.environ["MODEL_NAME"]
 except KeyError as e:
     raise RuntimeError(
         f"Missing required environment variable: {e}. "
@@ -21,7 +23,7 @@ except KeyError as e:
 
 logger = logging.getLogger("budget-ai")
 
-app = FastAPI(title="budget-ai-llama.cpp", version="0.1.0")
+app = FastAPI(title="budget-ai-vllm", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,10 +33,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class Message(BaseModel):
+    role: Literal["system", "user", "assistant"]
+    content: str
+
 class GenerateRequest(BaseModel):
-    prompt: str = Field(..., min_length=1)
-    max_tokens: int = Field(default=128, ge=1, le=4096)
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    model: Optional[str] = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+    messages: List[Message]
+    max_tokens: Optional[int] = 128
+    temperature: Optional[float] = 0.7
+    stream: Optional[bool] = True
 
 
 @app.get("/health")
@@ -44,16 +52,19 @@ def health() -> dict[str, str]:
 
 @app.post("/generate")
 def generate(req: GenerateRequest) -> StreamingResponse:
+    # vLLM uses OpenAI-compatible API format
     payload = {
-        "prompt": req.prompt,
-        "n_predict": req.max_tokens,
+        "model": req.model,
+        "messages": [msg.model_dump() for msg in req.messages],
+        "max_tokens": req.max_tokens,
         "temperature": req.temperature,
-        "stream": True,
+        "stream": req.stream,
     }
 
     body = json.dumps(payload).encode("utf-8")
+
     request = Request(
-        f"{LLAMA_SERVER_URL.rstrip('/')}/completion",
+        f"{VLLM_SERVER_URL.rstrip('/')}/v1/chat/completions",
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -63,22 +74,26 @@ def generate(req: GenerateRequest) -> StreamingResponse:
     # that connection errors can be surfaced as a proper 502 response.
     try:
         response = urlopen(request, timeout=TIMEOUT_SECONDS)
-    except URLError as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to reach llama.cpp server: {exc}") from exc
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "status": exc.code,
+                "reason": exc.reason,
+                "body": body,
+            },
+        )
 
     def stream_generator():
         try:
             with response:
                 while True:
-                    try:
-                        chunk = response.readline()
-                    except OSError as exc:
-                        logger.error("Error reading from llama.cpp stream: %s", exc)
-                        yield f"data: {json.dumps({'error': str(exc)})}\n\n".encode()
-                        break
+                    chunk = response.readline()
                     if not chunk:
                         break
-                    yield chunk
+                    yield chunk  # <-- raw vLLM SSE passthrough
         except Exception as exc:
             logger.error("Unexpected error in stream_generator: %s", exc)
 
