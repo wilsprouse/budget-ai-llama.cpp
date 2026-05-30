@@ -38,7 +38,7 @@ class Message(BaseModel):
     content: str
 
 class GenerateRequest(BaseModel):
-    model: Optional[str] = "TheBloke/Mistral-7B-Instruct-v0.3-AWQ"
+    model: Optional[str] = MODEL_NAME
     messages: List[Message]
     max_tokens: Optional[int] = 128
     temperature: Optional[float] = 0.7
