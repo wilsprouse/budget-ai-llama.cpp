@@ -130,10 +130,9 @@ start_llama_server() {
     -p "$LLAMA_PORT:8080" \
     -v "$MODEL_DIR:/models:Z" \
     "$LLAMA_IMAGE" \
-    --server \
+    --model "/models/$MODEL_FILE" \
     --host 0.0.0.0 \
     --port 8080 \
-    --model "/models/$MODEL_FILE" \
     --n-gpu-layers 99 \
     --ctx-size 8192
 
