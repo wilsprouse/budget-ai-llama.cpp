@@ -74,10 +74,6 @@ install_deps() {
   python3 -m pip install --user -r "$SCRIPT_DIR/requirements.txt" || \
     python3 -m pip install --break-system-packages -r "$SCRIPT_DIR/requirements.txt"
 
-  # Install huggingface-hub for downloading GGUF models
-  python3 -m pip install --user huggingface-hub || \
-    python3 -m pip install --break-system-packages huggingface-hub
-
   podman pull "$LLAMA_IMAGE"
 }
 
@@ -157,7 +153,11 @@ start_fastapi() {
     nohup python3 -m uvicorn api:app --host "$FASTAPI_HOST" --port "$FASTAPI_PORT" > "$SCRIPT_DIR/fastapi.log" 2>&1 &
     echo $! > "$SCRIPT_DIR/fastapi.pid"
     echo "FastAPI PID: $(cat "$SCRIPT_DIR/fastapi.pid")"
-    echo "Try: curl -X POST http://127.0.0.1:${FASTAPI_PORT}/generate -H 'Content-Type: application/json' -d '{\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}'"
+    cat <<'EOF'
+Try: curl -X POST http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"hello"}]}'
+EOF
   else
     echo "Starting FastAPI on port $FASTAPI_PORT"
     exec python3 -m uvicorn api:app --host "$FASTAPI_HOST" --port "$FASTAPI_PORT"

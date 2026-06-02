@@ -21,7 +21,7 @@ Start services in detached mode:
 
 ## What `start.sh` does
 
-- Downloads the **Codestral 22B (Q4_K_M quantized GGUF)** model from Hugging Face using huggingface-hub.
+- On first run, downloads the **Codestral 22B (Q4_K_M quantized GGUF)** model from Hugging Face using huggingface-hub.
 - Starts a `llama.cpp` server with the GGUF model using **Podman** with GPU acceleration.
 - llama.cpp provides efficient inference with quantized GGUF models for reduced memory usage.
 - Starts a FastAPI wrapper that forwards chat requests to llama.cpp's completion API.

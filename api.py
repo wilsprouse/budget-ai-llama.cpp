@@ -38,7 +38,7 @@ class Message(BaseModel):
     content: str
 
 class GenerateRequest(BaseModel):
-    model: Optional[str] = "bartowski/Codestral-22B-v0.1-GGUF"
+    model: Optional[str] = None  # Uses MODEL_NAME from environment if not specified
     messages: List[Message]
     max_tokens: Optional[int] = 128
     temperature: Optional[float] = 0.7
@@ -64,7 +64,8 @@ def generate(req: GenerateRequest) -> StreamingResponse:
             prompt_parts.append(f"Assistant: {msg.content}")
     
     prompt = "\n".join(prompt_parts)
-    if not prompt.endswith("\nAssistant:"):
+    # Only add Assistant prompt if the last message is from user
+    if req.messages and req.messages[-1].role == "user":
         prompt += "\nAssistant:"
     
     # llama.cpp /completion endpoint format
