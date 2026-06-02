@@ -38,7 +38,8 @@ class Message(BaseModel):
     content: str
 
 class GenerateRequest(BaseModel):
-    model: Optional[str] = None  # Uses MODEL_NAME from environment if not specified
+    # model field retained for API backward compatibility but not used by llama.cpp
+    model: Optional[str] = None
     messages: List[Message]
     max_tokens: Optional[int] = 128
     temperature: Optional[float] = 0.7

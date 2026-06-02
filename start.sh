@@ -153,9 +153,9 @@ start_fastapi() {
     nohup python3 -m uvicorn api:app --host "$FASTAPI_HOST" --port "$FASTAPI_PORT" > "$SCRIPT_DIR/fastapi.log" 2>&1 &
     echo $! > "$SCRIPT_DIR/fastapi.pid"
     echo "FastAPI PID: $(cat "$SCRIPT_DIR/fastapi.pid")"
-    cat <<'EOF'
-Try: curl -X POST http://127.0.0.1:8000/generate \
-  -H 'Content-Type: application/json' \
+    cat <<EOF
+Try: curl -X POST http://127.0.0.1:${FASTAPI_PORT}/generate \\
+  -H 'Content-Type: application/json' \\
   -d '{"messages":[{"role":"user","content":"hello"}]}'
 EOF
   else
