@@ -66,6 +66,7 @@ def generate(req: GenerateRequest) -> StreamingResponse:
     
     prompt = "\n".join(prompt_parts)
     # Only add Assistant prompt if the last message is from user
+    # If conversation ends with assistant message, model will continue from there
     if req.messages and req.messages[-1].role == "user":
         prompt += "\nAssistant:"
     

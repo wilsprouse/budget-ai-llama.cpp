@@ -96,22 +96,28 @@ download_model() {
   fi
   
   echo "Downloading model $MODEL_NAME ($MODEL_FILE) to $MODEL_DIR..."
-  python3 -c "
-from huggingface_hub import hf_hub_download
+  # Use Python with proper argument passing to avoid injection
+  python3 << 'PYTHON_SCRIPT'
 import sys
+from huggingface_hub import hf_hub_download
+import os
+
+MODEL_NAME = os.environ['MODEL_NAME']
+MODEL_FILE = os.environ['MODEL_FILE']
+MODEL_DIR = os.environ['MODEL_DIR']
 
 try:
     hf_hub_download(
-        repo_id='$MODEL_NAME',
-        filename='$MODEL_FILE',
-        local_dir='$MODEL_DIR',
+        repo_id=MODEL_NAME,
+        filename=MODEL_FILE,
+        local_dir=MODEL_DIR,
         local_dir_use_symlinks=False
     )
     print('Model downloaded successfully')
 except Exception as e:
     print(f'Error downloading model: {e}', file=sys.stderr)
     sys.exit(1)
-"
+PYTHON_SCRIPT
 }
 
 start_llama_server() {
