@@ -12,8 +12,8 @@ from typing import List, Optional, Literal
 
 
 try:
-    VLLM_SERVER_URL = os.environ["VLLM_SERVER_URL"]
-    TIMEOUT_SECONDS = float(os.environ["VLLM_SERVER_TIMEOUT"])
+    LLAMA_SERVER_URL = os.environ["LLAMA_SERVER_URL"]
+    TIMEOUT_SECONDS = float(os.environ["LLAMA_SERVER_TIMEOUT"])
     MODEL_NAME = os.environ["MODEL_NAME"]
 except KeyError as e:
     raise RuntimeError(
@@ -23,7 +23,7 @@ except KeyError as e:
 
 logger = logging.getLogger("budget-ai")
 
-app = FastAPI(title="budget-ai-vllm", version="0.1.0")
+app = FastAPI(title="budget-ai-llama", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,7 +38,7 @@ class Message(BaseModel):
     content: str
 
 class GenerateRequest(BaseModel):
-    model: Optional[str] = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+    model: Optional[str] = "bartowski/Codestral-22B-v0.1-GGUF"
     messages: List[Message]
     max_tokens: Optional[int] = 128
     temperature: Optional[float] = 0.7
@@ -52,11 +52,25 @@ def health() -> dict[str, str]:
 
 @app.post("/generate")
 def generate(req: GenerateRequest) -> StreamingResponse:
-    # vLLM uses OpenAI-compatible API format
+    # Convert messages to a single prompt string for llama.cpp
+    # llama.cpp expects a single prompt, not chat format
+    prompt_parts = []
+    for msg in req.messages:
+        if msg.role == "system":
+            prompt_parts.append(f"System: {msg.content}")
+        elif msg.role == "user":
+            prompt_parts.append(f"User: {msg.content}")
+        elif msg.role == "assistant":
+            prompt_parts.append(f"Assistant: {msg.content}")
+    
+    prompt = "\n".join(prompt_parts)
+    if not prompt.endswith("\nAssistant:"):
+        prompt += "\nAssistant:"
+    
+    # llama.cpp /completion endpoint format
     payload = {
-        "model": req.model,
-        "messages": [msg.model_dump() for msg in req.messages],
-        "max_tokens": req.max_tokens,
+        "prompt": prompt,
+        "n_predict": req.max_tokens,
         "temperature": req.temperature,
         "stream": req.stream,
     }
@@ -64,7 +78,7 @@ def generate(req: GenerateRequest) -> StreamingResponse:
     body = json.dumps(payload).encode("utf-8")
 
     request = Request(
-        f"{VLLM_SERVER_URL.rstrip('/')}/v1/chat/completions",
+        f"{LLAMA_SERVER_URL.rstrip('/')}/completion",
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -93,7 +107,7 @@ def generate(req: GenerateRequest) -> StreamingResponse:
                     chunk = response.readline()
                     if not chunk:
                         break
-                    yield chunk  # <-- raw vLLM SSE passthrough
+                    yield chunk  # <-- raw llama.cpp SSE passthrough
         except Exception as exc:
             logger.error("Unexpected error in stream_generator: %s", exc)
 
