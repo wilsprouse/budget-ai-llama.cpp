@@ -55,6 +55,8 @@ def health() -> dict[str, str]:
 def generate(req: GenerateRequest) -> StreamingResponse:
     # Convert messages to a single prompt string for llama.cpp
     # llama.cpp expects a single prompt, not chat format
+    # Note: This uses a simple format. For models trained with specific chat templates,
+    # you may need to adjust the formatting (e.g., [INST], <|im_start|>, etc.)
     prompt_parts = []
     for msg in req.messages:
         if msg.role == "system":

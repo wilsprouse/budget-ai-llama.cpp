@@ -99,8 +99,8 @@ download_model() {
   # Use Python with proper argument passing to avoid injection
   python3 << 'PYTHON_SCRIPT'
 import sys
-from huggingface_hub import hf_hub_download
 import os
+from huggingface_hub import hf_hub_download
 
 MODEL_NAME = os.environ['MODEL_NAME']
 MODEL_FILE = os.environ['MODEL_FILE']

@@ -105,7 +105,7 @@ llama.cpp is configured with `--n-gpu-layers 99` to offload all layers to GPU. T
 llama.cpp is configured with `--ctx-size 8192` for 8K context window. Adjust based on your needs and GPU memory.
 
 ### Quantization Options:
-Available quantization levels for Codestral-22B-v0.1:
+Available quantization levels for Codestral-22B-v0.1 (sizes will vary for other models):
 - Q8_0: 23.64GB (highest quality, minimal quality loss)
 - Q6_K: 18.25GB (very high quality, recommended for most use cases)
 - Q5_K_M: 15.72GB (high quality, good balance)
